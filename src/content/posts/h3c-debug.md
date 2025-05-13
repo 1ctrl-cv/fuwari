@@ -2,7 +2,7 @@
 title: 关于我对路由器瞎改一通让网速变快了这档事
 published: 2025-05-02
 description: '我家是H3C路由器，虽然他是OpenWRT的系统，但是却没法直接刷成iStoreOS，但是偶然一天，我发现他有Telnet，于是...'
-image: 'assets/2025-05-02-03-52-07-image.png'
+image: "https://r2.072103.xyz/fuwari-blog/img/2025-05-02-03-52-07-image.png"
 tags: [H3C]
 category: '记录'
 draft: false 

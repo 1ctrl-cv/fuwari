@@ -2,7 +2,7 @@
 title: 手把手教你部署Discourse
 published: 2025-05-02
 description: 'Discourse是一个开源的强大的论坛系统，让你马上就能拥有自己的BBS'
-image: 'assets/2025-05-02-22-03-04-image.png'
+image: "https://r2.072103.xyz/fuwari-blog/img/2025-05-02-22-03-04-image.png"
 tags: [Discourse]
 category: '教程'
 draft: false 

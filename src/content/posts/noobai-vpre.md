@@ -2,7 +2,7 @@
 title: 从零教你用上最新的NoobAI-V预测模型！
 published: 2025-05-13
 description: 'AI绘图发展了这么多年，你还不会画你推的同人图？'
-image: 'assets/2025-05-13-11-54-18-61f7cb01dbaf0cc0d9600129920d6666.png'
+image: "https://r2.072103.xyz/fuwari-blog/img/2025-05-13-11-54-18-61f7cb01dbaf0cc0d9600129920d6666.png"
 tags: [AI绘图, NoobAI]
 category: '教程'
 draft: false 

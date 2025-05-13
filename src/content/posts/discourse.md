@@ -162,4 +162,4 @@ Accessible via: http://0.0.0.0:3000/
 
 访问，大功告成
 
-![](assets/2025-05-02-22-20-51-image.png)
+![2025-05-02-22-20-51-image.png](https://r2.072103.xyz/fuwari-blog/img/2025-05-02-22-20-51-image.png)

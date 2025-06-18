@@ -34,6 +34,49 @@ const config = profileConfig;
                 {config.links[0].name}
             </a>}
         </div>
+        
+        <!-- 全站访问量统计 -->
+        <div class="text-center text-sm text-neutral-500 dark:text-neutral-400 mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700">
+            <div class="flex items-center justify-center gap-1">
+                <Icon name="material-symbols:visibility-outline" class="text-base"></Icon>
+                <span id="site-stats">加载中...</span>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    // 获取全站访问量统计
+    async function loadSiteStats() {
+        try {
+            const response = await fetch('https://umami-blog-api.afo.im/');
+            if (response.ok) {
+                const data = await response.text();
+                const statsElement = document.getElementById('site-stats');
+                if (statsElement && data) {
+                    // API返回格式为 xxx,yyy，其中xxx是浏览量，yyy是访问数
+                    const parts = data.trim().split(',');
+                    if (parts.length === 2) {
+                        const pageviews = parseInt(parts[0]) || 0;
+                        const visitors = parseInt(parts[1]) || 0;
+                        statsElement.textContent = `浏览量 ${pageviews} · 访问数 ${visitors}`;
+                    } else {
+                        statsElement.textContent = '数据格式错误';
+                    }
+                }
+            } else {
+                throw new Error('API请求失败');
+            }
+        } catch (error) {
+            console.error('获取全站统计失败:', error);
+            const statsElement = document.getElementById('site-stats');
+            if (statsElement) {
+                statsElement.textContent = '统计不可用';
+            }
+        }
+    }
+
+    // 页面加载完成后获取统计数据
+    document.addEventListener('DOMContentLoaded', loadSiteStats);
+</script>
 

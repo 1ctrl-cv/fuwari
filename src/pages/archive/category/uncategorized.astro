@@ -6,6 +6,6 @@ import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 ---
 
-<MainGridLayout title={i18n(I18nKey.archive)}>
+<MainGridLayout title={`${i18n(I18nKey.uncategorized)} - ${i18n(I18nKey.categories)}`} description={`${i18n(I18nKey.archive)} - ${i18n(I18nKey.uncategorized)}`}>
     <ArchivePanel categories={[UNCATEGORIZED]}></ArchivePanel>
 </MainGridLayout>

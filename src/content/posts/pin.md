@@ -14,7 +14,7 @@ QQ群：1051639698
 
 > 请认准QQ号2726730791、3932644274、3230434312这都是我
 
-Matrix： matrix.to/#/#acofork-tech:matrix.afo.im
+Matrix： matrix.to/#/#acofork-tech:matrix.afo.im [详细教程](https://www.afo.im/posts/element/)
 
 ---
 

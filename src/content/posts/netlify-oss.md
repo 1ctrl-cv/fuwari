@@ -11,9 +11,12 @@ lang: ''
 
 # 正式开始
 
+确保你有一个开源项目，并且已经托管在了Netlify，Github的也有你网站的链接
+![](../assets/images/2025-08-09-12-30-32-image.png)
+
 前往 https://opensource-form.netlify.com/
 
-填写相关信息，提交
+填写相关信息，提交。
 
 ![](../assets/images/2025-08-09-05-17-05-image.png)
 

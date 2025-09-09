@@ -9,6 +9,8 @@ draft: false
 lang: ''
 ---
 
+> 视频： [禁用Astro跟弱智一般的静态构建图像优化_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV12VH2z1EDb)
+
 # 为什么要禁用图片优化？
 
 下图是一个默认的Astro静态构建，也就是 `astro build` 的输出，输出中记录了每张图片是如何被Astro “优化” 的。我们不难发现问题所在：

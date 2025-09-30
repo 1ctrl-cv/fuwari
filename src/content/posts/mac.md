@@ -37,6 +37,11 @@ Mac默认的Python3.9，太老了，使用brew可以安装最新版的Python，�
 ```bash
 brew link python@3.13 --force
 ```
+
+JB系列软件一件激活
+```bash
+curl -L -o ckey.run ckey.run && bash ckey.run
+```
 # 未完待续...
 我写不动了，
 

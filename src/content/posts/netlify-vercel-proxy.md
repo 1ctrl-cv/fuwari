@@ -2,7 +2,7 @@
 category: 随笔
 description: 会用Netlify，家宽建站不是梦！
 draft: false
-image: ../assets/images/easy-cover%20(2).png
+image: ../assets/images/nvp.png
 lang: ""
 published: 2025-04-04
 tags:

@@ -96,4 +96,5 @@ Build结束，全绿
 ![](../assets/images/Screenshot_2025-11-21-17-53-07-65_edf9c6c5202cf0a.jpg)![](../assets/images/Screenshot_2025-11-21-17-53-04-92_edf9c6c5202cf0a.jpg)![](../assets/images/Screenshot_2025-11-21-17-53-34-66_edf9c6c5202cf0a.jpg)![](../assets/images/Screenshot_2025-11-21-18-32-58-31_edf9c6c5202cf0a.jpg)
 
 > [!CAUTION]
->  值得注意的是，该项目似乎仅实现了手机端的大部分API，而针对于电脑浏览器插件使用的API暂未支持，我们目前正在尝试用AI补全... Just a moment...
+>  ~~值得注意的是，该项目似乎仅实现了手机端的大部分API，而针对于电脑浏览器插件使用的API暂未支持，我们目前正在尝试用AI补全... Just a moment...~~
+>  已支持电脑端浏览器插件

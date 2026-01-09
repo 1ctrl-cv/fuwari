@@ -81,11 +81,19 @@ Build结束，全绿
 先添加 **自定义域** ，填你的域名，因为 Worker 默认给的域名国内无法访问
 ![](../assets/images/warden-worker-19.png)
 
-再添加**变量与机密** （注意不要有空格）
+再添加**机密环境变量** （注意不要有空格）
 - `ALLOWED_EMAILS` your-email@example.com 
 - `JWT_SECRET` 随机的长字符串 
 - `JWT_REFRESH_SECRET` 随机的长字符串
-![](../assets/images/warden-worker-20.png)
+> [!CAUTION]
+> 必须使用Wrangler CLI命令添加机密环境变量，如： `wrangler secret put JWT_SECRET` 这样添加的环境变量不会在新的部署中被覆盖
+
+![](../assets/images/warden-worker-22.png)
+
+![](../assets/images/warden-worker-23.png)
 
 此时打开手机上的 **BitWarden** 软件，在你的自托管上创建账号即可（注意：密码一经设置将无法更改）
 ![](../assets/images/Screenshot_2025-11-21-17-53-07-65_edf9c6c5202cf0a.jpg)![](../assets/images/Screenshot_2025-11-21-17-53-04-92_edf9c6c5202cf0a.jpg)![](../assets/images/Screenshot_2025-11-21-17-53-34-66_edf9c6c5202cf0a.jpg)![](../assets/images/Screenshot_2025-11-21-18-32-58-31_edf9c6c5202cf0a.jpg)
+
+> [!CAUTION]
+>  值得注意的是，该项目似乎仅实现了手机端的大部分API，而针对于电脑浏览器插件使用的API暂未支持，我们目前正在尝试用AI补全... Just a moment...

@@ -101,7 +101,7 @@ jobs:
       - name: Verify Clean Result
         env:
           PAGES_NAME: ${{ steps.get-pages-name.outputs.pages_name }}
-          RETAIN_VERSIONS: ${{ vars.RETAIN_VERSIONS || '1' }}
+          RETAIN_VERSIONS: ${{ vars.RETAIN_VERSIONS || '2' }}
         run: |
           set -euo pipefail
 

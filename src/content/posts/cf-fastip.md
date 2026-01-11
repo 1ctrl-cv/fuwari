@@ -180,6 +180,9 @@ function getProxyPrefix(hostname) {
 # 针对于Cloudflare Workers
 
 1. 在Workers中添加路由，然后直接将你的路由域名从指向`xxx.worker.dev`改为`cloudflare.182682.xyz`等优选域名即可
+2. 如果是外域，SaaS后再添加路由即可，就像
+![](../assets/images/cf-fastip-12.png)
+![](../assets/images/cf-fastip-13.png)
 
 # 针对于Cloudflare Tunnel（ZeroTrust）
 请先参照 [常规SaaS优选](#传统优选) 设置完毕，源站即为 Cloudflare Tunnel。正常做完SaaS接入即可

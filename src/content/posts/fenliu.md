@@ -70,6 +70,6 @@ Umami，用于在网站插入一个JS来进行访客统计以及展示访客信�
 
 ![](../assets/images/https___blog.acofork.com__多地区多线路HTTP测速%20(1).png)
 ### Umami
-![](../assets/images/https___umami.acofork.com__多地区多线路HTTP测速.png)
+![](../assets/images/https___umamiacoforkcom__多地区多线路HTTP测速.png)
 ### 随机图
-![](../assets/images/https___pic.acofork.com__多地区多线路HTTP测速.png)
+![](../assets/images/https___picacoforkcom__多地区多线路HTTP测速.png)

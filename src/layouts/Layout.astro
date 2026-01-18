@@ -114,6 +114,7 @@ const bannerOffset =
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<script src="/js/umami-share.js" defer></script>
+		<script data-swup-ignore-script src="https://pic1.acofork.com/random.js" defer></script>
 		
 		
 		
@@ -161,27 +162,69 @@ const bannerOffset =
 			offset = offset - offset % 4;
 			document.documentElement.style.setProperty('--banner-height-extend', `${offset}px`);
 			
-			// Background image loading detection
-			const bgUrl = getComputedStyle(document.documentElement).getPropertyValue('--bg-url').trim();
-			const bgEnable = getComputedStyle(document.documentElement).getPropertyValue('--bg-enable').trim();
+			// // Background image loading detection
+			// const bgUrl = getComputedStyle(document.documentElement).getPropertyValue('--bg-url').trim();
+			// const bgEnable = getComputedStyle(document.documentElement).getPropertyValue('--bg-enable').trim();
 			
-			if (bgUrl && bgUrl !== 'none' && bgEnable === '1') {
-				const img = new Image();
-				const urlMatch = bgUrl.match(/url\(["']?([^"')]+)["']?\)/);
-				if (urlMatch) {
-					img.onload = function() {
-						// 背景图片完全加载后，显示背景并启用卡片透明效果
-						document.body.classList.add('bg-loaded');
-						document.documentElement.style.setProperty('--card-bg', 'var(--card-bg-transparent)');
-						document.documentElement.style.setProperty('--float-panel-bg', 'var(--float-panel-bg-transparent)');
-					};
-					img.onerror = function() {
-						// Keep cards opaque if background image fails to load
-						console.warn('Background image failed to load, keeping cards opaque');
-					};
-					img.src = urlMatch[1];
-				}
-			}
+			// if (bgUrl && bgUrl !== 'none' && bgEnable === '1') {
+			// 	const img = new Image();
+			// 	const urlMatch = bgUrl.match(/url\(["']?([^"')]+)["']?\)/);
+			// 	if (urlMatch) {
+			// 		img.onload = function() {
+			// 			// 背景图片完全加载后，显示背景并启用卡片透明效果
+			// 			document.body.classList.add('bg-loaded');
+			// 			document.documentElement.style.setProperty('--card-bg', 'var(--card-bg-transparent)');
+			// 			document.documentElement.style.setProperty('--float-panel-bg', 'var(--float-panel-bg-transparent)');
+			// 		};
+			// 		img.onerror = function() {
+			// 			// Keep cards opaque if background image fails to load
+			// 			console.warn('Background image failed to load, keeping cards opaque');
+			// 		};
+			// 		img.src = urlMatch[1];
+			// 	}
+			// }
+
+            // Random Background Image Integration
+             // This waits for the external script to define window.getRandomPicH
+             /* 
+             function setRandomBackground() {
+                 // Check if the external random pic function is available
+                 if (typeof window.getRandomPicH === 'function') {
+                      const bgUrl = window.getRandomPicH();
+                      const bgBox = document.getElementById('bg-box');
+                      if (bgBox && bgUrl) {
+                         console.log('Setting random background:', bgUrl);
+                         const img = new Image();
+                         img.onload = function() {
+                             bgBox.style.backgroundImage = `url('${bgUrl}')`;
+                             bgBox.classList.add('loaded');
+                             bgBox.classList.add('random-loaded'); // Add specific class
+                             console.log('Random background loaded successfully');
+                             
+                             // Set CSS variables for transparency effects
+                             document.documentElement.style.setProperty('--card-bg', 'var(--card-bg-transparent)');
+                             document.documentElement.style.setProperty('--float-panel-bg', 'var(--float-panel-bg-transparent)');
+                         };
+                         img.onerror = function() {
+                             console.error('Failed to load random background image:', bgUrl);
+                         };
+                         img.src = bgUrl;
+                      } else {
+                        console.warn('bgBox not found or bgUrl is empty', { bgBox, bgUrl });
+                      }
+                 } else {
+                     // Retry after a short delay if script is not yet loaded
+                     console.log('Waiting for getRandomPicH...');
+                     setTimeout(setRandomBackground, 500);
+                 }
+             }
+             // Start attempting to set background
+             if (document.readyState === 'loading') {
+                 document.addEventListener('DOMContentLoaded', setRandomBackground);
+             } else {
+                 setRandomBackground();
+             }
+             */
 		</script>
 		<style define:vars={{
 			configHue,
@@ -221,7 +264,6 @@ const bannerOffset =
 				left: 0;
 				width: 100%;
 				height: 100%;
-				background-image: var(--bg-url);
 				background-position: var(--bg-position);
 				background-size: var(--bg-size);
 				background-repeat: var(--bg-repeat);
@@ -229,16 +271,12 @@ const bannerOffset =
 				opacity: 0;
 				pointer-events: none;
 				z-index: -1;
-				transition: opacity 0.5s ease-in-out;
+				transition: opacity 0.3s ease-in-out;
 			}
-
-            .bg-loaded #bg-box {
-                opacity: var(--bg-opacity);
-            }
 			
-			/* #bg-box.loaded {
+			#bg-box.loaded {
 				opacity: calc(var(--bg-opacity) * var(--bg-enable));
-			} */
+			}
 		</style>
 
 		<slot name="head"></slot>
@@ -247,6 +285,7 @@ const bannerOffset =
 		<link rel="alternate" type="application/rss+xml" title={profileConfig.name} href={`${Astro.site}rss.xml`}/>
 		<!-- Umami分析（自建） -->
 		<script defer src="https://umami.acofork.com/script.js" data-website-id="5d710dbd-3a2e-43e3-a553-97b415090c63" data-swup-ignore-script></script>
+
 	</head>
 	<body class=" min-h-screen transition " class:list={[{"lg:is-home": isHomePage, "enable-banner": enableBanner}]}
 		  data-overlayscrollbars-initialize
@@ -258,68 +297,7 @@ const bannerOffset =
 		<!-- increase the page height during page transition to prevent the scrolling animation from jumping -->
 		<div id="page-height-extend" class="hidden h-[300vh]"></div>
 
-		<!-- 域名检测脚本 -->
-		<script is:inline define:vars={{officialSites: siteConfig.officialSites || []}}>
-			// 域名检测功能
-			function checkDomain() {
-				try {
-					// 获取当前访问的完整URL
-					const currentUrl = window.location.href;
-					// 获取当前域名
-					const currentDomain = window.location.hostname;
-					
-					// 获取所有官方域名
-					const officialDomains = officialSites.map(site => {
-						try {
-                            const url = typeof site === 'string' ? site : site.url;
-							return new URL(url).hostname;
-						} catch (e) {
-							return null;
-						}
-					}).filter(domain => domain !== null);
-					
-					// 检查当前域名是否为官方域名或本地开发环境
-					const isOfficialDomain = officialDomains.some(officialDomain => 
-                        currentDomain === officialDomain || currentDomain.endsWith('.' + officialDomain)
-                    );
-					const isLocalDev = currentDomain === 'localhost' || currentDomain === '127.0.0.1';
-					
-					// 如果当前域名不是官方域名且不是本地开发环境
-					if (!isOfficialDomain && !isLocalDev) {
-						// 创建警告弹窗
-						const shouldRedirect = confirm(
-							`⚠️ 域名安全警告\n\n` +
-							`您当前访问的域名：${currentDomain}\n` +
-							`官方域名：${officialDomains.join(', ')}\n\n` +
-							`您可能正在访问非官方网站，存在安全风险！\n\n` +
-							`点击"确定"跳转到官方网站\n` +
-							`点击"取消"继续访问当前网站（不推荐）`
-						);
-						
-						// 如果用户选择跳转到官方网站
-						if (shouldRedirect) {
-							// 构建官方网站的对应页面URL（使用第一个官方网站）
-							const currentPath = window.location.pathname + window.location.search + window.location.hash;
-                            const firstSite = officialSites[0];
-                            const firstUrl = typeof firstSite === 'string' ? firstSite : firstSite.url;
-							const officialPageUrl = firstUrl + currentPath;
-							// 跳转到官方网站
-							window.location.href = officialPageUrl;
-						}
-					}
-				} catch (error) {
-					// 如果检测过程中出现错误，静默处理，不影响正常访问
-					console.warn('域名检测失败:', error);
-				}
-			}
-			
-			// 页面加载完成后执行域名检测
-			if (document.readyState === 'loading') {
-				document.addEventListener('DOMContentLoaded', checkDomain);
-			} else {
-				checkDomain();
-			}
-		</script>
+		
 	</body>
 </html>
 

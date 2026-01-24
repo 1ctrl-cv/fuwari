@@ -37,13 +37,16 @@ pip install git-filter-repo
 git filter-repo --force --path src/secret.txt --invert-paths
 ```
 
-比如这里我们一不小心提交了个 **微信密码** ，就可以用该命令剔除它
+比如这里我们一不小心提交了个 **微信密码** 
+
+![](../assets/images/del-git-commit-2.png)
+
+我们可以用该命令将其 **剔除** 
 
 ```bash
 git filter-repo --force --path 微信密码.txt --invert-paths
 ```
 
-![](../assets/images/del-git-commit-2.png)
 
 ![](../assets/images/del-git-commit-4.png)
 

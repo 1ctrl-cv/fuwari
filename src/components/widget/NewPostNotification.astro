@@ -493,8 +493,19 @@
                     const contentChanged = post.content !== stored.content;
                     
                     if (titleChanged || dateChanged || descriptionChanged || contentChanged) {
-                        // Calculate diff only if content changed
-                        const diff = contentChanged ? computeDiff(stored.content, post.content) : null;
+                        // Calculate diff for content
+                        let diff = null;
+                        
+                        if (contentChanged) {
+                             diff = computeDiff(stored.content, post.content);
+                        } else if (descriptionChanged) {
+                             // If content is same but description changed, show description diff
+                             diff = computeDiff(stored.description, post.description);
+                             // Add a label to indicate this is description diff? 
+                             // The UI doesn't support labels inside diff yet, but at least user sees the text change.
+                        } else if (titleChanged) {
+                             diff = computeDiff(stored.title, post.title);
+                        }
                         
                         detectedChanges.push({ 
                             ...post, 

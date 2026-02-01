@@ -130,12 +130,7 @@ export const profileConfig: ProfileConfig = {
 			name: "GitHub",
 			icon: "github", // Local icon
 			url: "https://github.com/afoim",
-		},
-		{
-			name: "Folo",
-			icon: "folo", // Local icon
-			url: "https://app.folo.is/share/feeds/236818461447222272",
-		},
+		}
 	],
 };
 

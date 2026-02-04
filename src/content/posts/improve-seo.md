@@ -121,6 +121,13 @@ Lighthouse是一个浏览器插件，可以分析站点的性能、无障碍、�
 
 谷歌广告： https://www.google.com/adsense/
 
+# 主动提交站点地图
+
+尽管大部分搜索引擎都会主动通过探测 `/robots.txt` `/sitemap.xml` `rss.xml` `atom.xml` 等路径来得知网站的架地图，但还是建议主动提交站点地图
+
+![](../assets/images/improve-seo-1.png)
+
+
 # 使用IndexNow
 
 曾经，如果想要提高网站的SEO，我们只能静静等待各大搜索引擎爬虫进行网站内容的爬取

@@ -1,5 +1,7 @@
-import { execSync } from "node:child_process";
 import { gitHubEditConfig } from "../config";
+// Import json directly - Vite/Astro handles JSON imports
+// @ts-ignore
+import gitHistory from "../json/git-history.json";
 
 export interface Commit {
   hash: string;
@@ -8,41 +10,19 @@ export interface Commit {
   author: string;
 }
 
-export function getPostHistory(filePath: string): Commit[] {
+export function getPostHistory(postId: string): Commit[] {
   try {
-    // Check if git is available
-    try {
-      execSync("git --version", { stdio: "ignore" });
-    } catch (e) {
-      console.warn("Git is not installed or not available in PATH.");
-      return [];
+    // Normalize ID to match keys in JSON (forward slashes)
+    const normalizedId = postId.replace(/\\/g, '/');
+    
+    // Look up in the pre-generated history map
+    if (gitHistory && gitHistory[normalizedId]) {
+      return gitHistory[normalizedId];
     }
-
-    // Get git log
-    // --follow: Continue listing the history of a file beyond renames
-    // --pretty=format: Custom format for easy parsing
-    // %H: Commit hash
-    // %ad: Author date (format specified by --date)
-    // %s: Subject (commit message)
-    // %an: Author name
-    const output = execSync(
-      `git log --follow --pretty=format:"%H|%ad|%s|%an" --date=iso -- "${filePath}"`,
-      { encoding: "utf-8" }
-    );
-
-    if (!output) {
-      return [];
-    }
-
-    return output
-      .split("\n")
-      .map((line) => {
-        const [hash, date, message, author] = line.split("|");
-        return { hash, date, message, author };
-      })
-      .filter((commit) => commit.hash && commit.date); // Filter out empty lines
+    
+    return [];
   } catch (e) {
-    console.error(`Failed to get git history for file: ${filePath}`, e);
+    console.error(`Failed to get git history for post: ${postId}`, e);
     return [];
   }
 }

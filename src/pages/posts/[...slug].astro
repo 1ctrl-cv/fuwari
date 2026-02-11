@@ -27,8 +27,7 @@ const { Content, headings } = await entry.render();
 
 const { remarkPluginFrontmatter } = await entry.render();
 
-const filePath = path.join(process.cwd(), "src/content/posts", entry.id);
-const history = getPostHistory(filePath);
+const history = getPostHistory(entry.id);
 
 const jsonLd = {
 	"@context": "https://schema.org",

@@ -27,7 +27,7 @@ lang: ""
 
 ### 下载ComfyUI
 
-> [!INFO]
+> [!tip]
 > 更推荐使用 [Stable Diffusion Forge](https://www.bilibili.com/video/BV1rc6nYNEYo/)，如果不需要复杂的节点配布，sdf可以更方便的去写提示词
 > ![](../assets/images/ai-wife-17.png)
 

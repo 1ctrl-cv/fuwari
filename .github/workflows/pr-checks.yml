@@ -198,6 +198,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # 确保 Git 正确处理中文和特殊字符路径
+          git config --global core.quotepath false
+          
           MODE="${{ inputs.mode }}"
           PR_NUM="${{ inputs.pr_number }}"
           

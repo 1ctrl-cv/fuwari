@@ -1,0 +1,261 @@
+name: PR 检查与自动合并
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "模式：检查单个 PR 或所有开启的 PR"
+        required: true
+        default: "single"
+        type: choice
+        options:
+          - single
+          - all_open
+      pr_number:
+        description: "PR 编号（single 模式下必填）"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: write
+
+jobs:
+  pr-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装依赖
+        run: npm install --no-save
+
+      - name: 获取变更文件 (PR 触发)
+        if: github.event_name == 'pull_request'
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            src/data/friends/**
+            src/data/sponsors/**
+
+      - name: 处理 PR (PR 触发)
+        if: github.event_name == 'pull_request' && steps.changed-files.outputs.any_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "变更文件: $ALL_CHANGED_FILES"
+          
+          HAS_FRIENDS=false
+          HAS_SPONSORS=false
+          FRIEND_NAME=""
+          SPONSOR_NAME=""
+          ERROR_TYPE=""
+          
+          # 遍历变更文件
+          for file in $ALL_CHANGED_FILES; do
+            echo "正在检查文件: $file"
+            
+            # 检查文件是否存在（可能被删除）
+            if [ ! -f "$file" ]; then
+              echo "文件 $file 未找到（可能已删除），跳过。"
+              continue
+            fi
+            
+            # 运行检查脚本
+            # 清理之前的输出
+            echo "" > "$GITHUB_OUTPUT"
+            
+            if ! node scripts/check-pr-content.js "$file"; then
+              echo "::error file=$file::文件 $file 验证失败"
+              
+              # 获取错误类型
+              LAST_ERROR=$(grep "error_type=" "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2)
+              if [ -z "$LAST_ERROR" ]; then LAST_ERROR="json_invalid"; fi # 默认回退
+              
+              if [ -z "$ERROR_TYPE" ]; then ERROR_TYPE="$LAST_ERROR"; fi
+              
+              # 优先级覆盖
+              if [ "$LAST_ERROR" == "json_invalid" ]; then ERROR_TYPE="json_invalid"; fi
+              
+              # 遇到错误停止检查
+              break
+            fi
+            
+            # 提取名称
+            NAME=$(jq -r .name "$file")
+            
+            if [[ "$file" == src/data/friends/* ]]; then
+              HAS_FRIENDS=true
+              FRIEND_NAME="$NAME"
+            elif [[ "$file" == src/data/sponsors/* ]]; then
+              HAS_SPONSORS=true
+              SPONSOR_NAME="$NAME"
+            fi
+          done
+          
+          # 标签管理函数
+          update_labels() {
+            local add_label="$1"
+            local pr="$2"
+            
+            # 定义所有可能的状态标签
+            local labels=("无效的json" "头像链接不可达" "网站链接不可达" "所有链接不可达" "链接检查通过")
+            
+            # 先移除所有状态标签
+            for label in "${labels[@]}"; do
+              if [ "$label" != "$add_label" ]; then
+                gh pr edit "$pr" --remove-label "$label" || true # 忽略标签不存在的错误
+              fi
+            done
+            
+            # 添加新标签
+            if [ -n "$add_label" ]; then
+              gh pr edit "$pr" --add-label "$add_label"
+            fi
+          }
+
+          if [ -n "$ERROR_TYPE" ]; then
+             echo "验证失败，错误类型: $ERROR_TYPE"
+             LABEL=""
+             case "$ERROR_TYPE" in
+               "json_invalid") LABEL="无效的json" ;;
+               "url_unreachable") LABEL="网站链接不可达" ;;
+               "avatar_unreachable") LABEL="头像链接不可达" ;;
+               *) LABEL="所有链接不可达" ;;
+             esac
+             
+             update_labels "$LABEL" "$PR_NUMBER"
+             exit 1
+          fi
+          
+          # 如果执行到这里，说明所有检查通过
+          update_labels "链接检查通过" "$PR_NUMBER"
+          
+          # 重命名 PR
+          NEW_TITLE=""
+          if [ "$HAS_FRIENDS" = "true" ] && [ "$HAS_SPONSORS" = "true" ]; then
+             NEW_TITLE="添加友链/赞助：Multiple"
+          elif [ "$HAS_FRIENDS" = "true" ]; then
+             NEW_TITLE="添加友链：$FRIEND_NAME"
+          elif [ "$HAS_SPONSORS" = "true" ]; then
+             NEW_TITLE="添加赞助：$SPONSOR_NAME"
+          fi
+          
+          if [ -n "$NEW_TITLE" ]; then
+            echo "正在重命名 PR 为: $NEW_TITLE"
+            gh pr edit "$PR_NUMBER" --title "$NEW_TITLE"
+          fi
+          
+          # 处理合并/评论逻辑
+          if [ "$HAS_SPONSORS" = "true" ]; then
+            echo "包含赞助变更。添加评论但不合并。"
+            gh pr comment "$PR_NUMBER" --body "✅ 检查通过！由于涉及赞助信息，请等待管理员人工合并。"
+          elif [ "$HAS_FRIENDS" = "true" ]; then
+            echo "仅包含友链变更。自动合并..."
+            gh pr review "$PR_NUMBER" --approve -b "✅ 自动检查通过，准备合并。"
+            gh pr merge "$PR_NUMBER" --squash --auto || echo "自动合并失败（可能仓库设置未开启），但检查已通过。"
+          fi
+
+      - name: 处理手动触发
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MODE="${{ inputs.mode }}"
+          PR_NUM="${{ inputs.pr_number }}"
+          
+          # 标签管理函数（重复逻辑）
+          update_labels() {
+            local add_label="$1"
+            local pr="$2"
+            local labels=("无效的json" "头像链接不可达" "网站链接不可达" "所有链接不可达" "链接检查通过")
+            for label in "${labels[@]}"; do
+              if [ "$label" != "$add_label" ]; then
+                gh pr edit "$pr" --remove-label "$label" || true 
+              fi
+            done
+            if [ -n "$add_label" ]; then
+              gh pr edit "$pr" --add-label "$add_label"
+            fi
+          }
+          
+          validate_pr() {
+            local pr=$1
+            echo "正在验证 PR #$pr..."
+            
+            # 获取变更文件
+            files=$(gh pr diff "$pr" --name-only)
+            
+            # 过滤相关文件
+            relevant_files=""
+            for f in $files; do
+              if [[ "$f" == src/data/friends/* ]] || [[ "$f" == src/data/sponsors/* ]]; then
+                relevant_files="$relevant_files $f"
+              fi
+            done
+            
+            if [ -z "$relevant_files" ]; then
+              echo "PR #$pr 中没有相关文件"
+              return
+            fi
+            
+            # 检出 PR
+            gh pr checkout "$pr"
+            
+            ERROR_TYPE=""
+            
+            # 清理 OUTPUT 文件
+            echo "" > "$GITHUB_OUTPUT"
+            
+            for file in $relevant_files; do
+              if [ -f "$file" ]; then
+                 if ! node scripts/check-pr-content.js "$file"; then
+                    # 捕获错误
+                    LAST_ERROR=$(grep "error_type=" "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2)
+                    if [ -z "$LAST_ERROR" ]; then LAST_ERROR="json_invalid"; fi
+                    if [ -z "$ERROR_TYPE" ]; then ERROR_TYPE="$LAST_ERROR"; fi
+                    if [ "$LAST_ERROR" == "json_invalid" ]; then ERROR_TYPE="json_invalid"; fi
+                    break
+                 fi
+              fi
+            done
+            
+            if [ -n "$ERROR_TYPE" ]; then
+               echo "PR #$pr 失败: $ERROR_TYPE"
+               LABEL=""
+               case "$ERROR_TYPE" in
+                 "json_invalid") LABEL="无效的json" ;;
+                 "url_unreachable") LABEL="网站链接不可达" ;;
+                 "avatar_unreachable") LABEL="头像链接不可达" ;;
+                 *) LABEL="所有链接不可达" ;;
+               esac
+               update_labels "$LABEL" "$pr"
+            else
+               echo "PR #$pr 通过。"
+               update_labels "链接检查通过" "$pr"
+            fi
+          }
+          
+          if [ "$MODE" == "single" ]; then
+            if [ -z "$PR_NUM" ]; then echo "需要提供 PR 编号"; exit 1; fi
+            validate_pr "$PR_NUM"
+          elif [ "$MODE" == "all_open" ]; then
+            # 列出所有开启的 PR
+            prs=$(gh pr list --state open --json number --jq '.[].number')
+            for pr in $prs; do
+              validate_pr "$pr"
+            done
+          fi

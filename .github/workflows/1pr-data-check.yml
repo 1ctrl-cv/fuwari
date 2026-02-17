@@ -21,11 +21,6 @@ jobs:
 
             console.log("=== PR Data Path Check Started ===");
 
-            const allowedPaths = [
-              /^data\/friends\/.+\.json$/,
-              /^data\/sponsors\/.+\.json$/
-            ];
-
             const prNumber = context.payload.pull_request.number;
 
             console.log("Checking PR:", prNumber);
@@ -44,8 +39,7 @@ jobs:
               return;
             }
 
-            let validJsonChanged = false;
-            let invalidPath = false;
+            let isTargetDirectory = false;
 
             for (const file of files) {
 
@@ -53,57 +47,30 @@ jobs:
 
               if (file.status === "removed") continue;
 
-              if (file.filename.endsWith(".json")) {
-
-                const allowed = allowedPaths.some(pattern =>
-                  pattern.test(file.filename)
-                );
-
-                if (!allowed) {
-                  invalidPath = true;
-                  break;
-                }
-
-                validJsonChanged = true;
+              if (
+                file.filename.startsWith("src/data/friends/") ||
+                file.filename.startsWith("src/data/sponsors/")
+              ) {
+                isTargetDirectory = true;
+                break;
               }
             }
 
-            if (invalidPath) {
+            if (!isTargetDirectory) {
 
-              console.log("Invalid file path detected.");
-
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: "❌ JSON 文件路径不合法，仅允许修改 data/friends/ 或 data/sponsors/ 目录。"
-              });
-
-              await github.rest.pulls.update({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: prNumber,
-                state: "closed"
-              });
-
-              return;
-            }
-
-            if (!validJsonChanged) {
-
-              console.log("No JSON files changed.");
+              console.log("Not target directory. Skipping all auto checks.");
 
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: prNumber,
-                labels: ["invalid-json"]
+                labels: ["skip-auto-check"]
               });
 
               return;
             }
 
-            console.log("Path check passed.");
+            console.log("Target directory detected. Continue workflow chain.");
 
             await github.rest.issues.addLabels({
               owner: context.repo.owner,

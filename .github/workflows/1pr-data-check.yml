@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check PR file paths
+      - name: Detect PR type and label
         uses: actions/github-script@v7
         with:
           script: |
@@ -22,8 +22,6 @@ jobs:
             console.log("=== PR Data Path Check Started ===");
 
             const prNumber = context.payload.pull_request.number;
-
-            console.log("Checking PR:", prNumber);
 
             const files = await github.paginate(
               github.rest.pulls.listFiles,
@@ -39,7 +37,8 @@ jobs:
               return;
             }
 
-            let isTargetDirectory = false;
+            let isFriend = false;
+            let isSponsor = false;
 
             for (const file of files) {
 
@@ -47,36 +46,42 @@ jobs:
 
               if (file.status === "removed") continue;
 
-              if (
-                file.filename.startsWith("src/data/friends/") ||
-                file.filename.startsWith("src/data/sponsors/")
-              ) {
-                isTargetDirectory = true;
-                break;
+              if (file.filename.startsWith("src/data/friends/")) {
+                isFriend = true;
+              }
+
+              if (file.filename.startsWith("src/data/sponsors/")) {
+                isSponsor = true;
               }
             }
 
-            if (!isTargetDirectory) {
+            let labelToAdd = null;
 
-              console.log("Not target directory. Skipping all auto checks.");
+            if (isFriend && !isSponsor) {
+              labelToAdd = "友链";
+            }
 
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                labels: ["skip-auto-check"]
-              });
+            if (isSponsor && !isFriend) {
+              labelToAdd = "赞助";
+            }
 
+            if (isFriend && isSponsor) {
+              console.log("PR modifies both directories.");
+              labelToAdd = "友链";
+            }
+
+            if (!labelToAdd) {
+              console.log("Not a friend/sponsor PR. Skipping label.");
               return;
             }
 
-            console.log("Target directory detected. Continue workflow chain.");
+            console.log("Adding label:", labelToAdd);
 
             await github.rest.issues.addLabels({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: prNumber,
-              labels: ["path-check-passed"]
+              labels: [labelToAdd]
             });
 
             console.log("=== PR Data Path Check Finished ===");

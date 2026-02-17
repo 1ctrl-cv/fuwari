@@ -16,7 +16,20 @@ export const siteConfig: SiteConfig = {
 	description:
 		"《二叉树树》是一个专注于IT/互联网技术分享与实践的个人技术博客，在这里你可以找到众多前沿技术的分享与实践经验。",
 
-	keywords: ["二叉树树","二叉树树官网","树","二叉树","二叉","博客","AcoFork Blog","AcoFork","Blog","acofork blog","acofork","blog"],
+	keywords: [
+		"二叉树树",
+		"二叉树树官网",
+		"树",
+		"二叉树",
+		"二叉",
+		"博客",
+		"AcoFork Blog",
+		"AcoFork",
+		"Blog",
+		"acofork blog",
+		"acofork",
+		"blog",
+	],
 	lang: "zh_CN", // 'en', 'zh_CN', 'zh_TW', 'ja', 'ko', 'es', 'th'
 	themeColor: {
 		hue: 361, // Default hue for the theme color, from 0 to 360. e.g. red: 0, teal: 200, cyan: 250, pink: 345
@@ -128,7 +141,7 @@ export const profileConfig: ProfileConfig = {
 			name: "Folo",
 			icon: "folo", // Local icon
 			url: "https://app.folo.is/share/feeds/245004133358075904",
-		}
+		},
 	],
 };
 

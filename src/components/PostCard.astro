@@ -20,10 +20,19 @@ interface Props {
 	description: string;
 	draft: boolean;
 	style: string;
-    loading?: "eager" | "lazy";
+	loading?: "eager" | "lazy";
 }
-const { entry, title, url, published, updated, image, description, style, loading = "lazy" } =
-	Astro.props;
+const {
+	entry,
+	title,
+	url,
+	published,
+	updated,
+	image,
+	description,
+	style,
+	loading = "lazy",
+} = Astro.props;
 
 const isPinned = entry.data.pinned === true;
 const className = Astro.props.class;

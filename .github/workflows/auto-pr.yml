@@ -297,6 +297,28 @@ jobs:
 
             const avatarUrl = normalizeUrl(primary.data.avatar)
             const siteUrl = normalizeUrl(primary.data.url)
+            const selfSite = siteBase ? siteBase.replace(/\/$/, '') : null
+            const normalizedSiteUrl = siteUrl ? siteUrl.replace(/\/$/, '') : null
+            const normalizedBacklinkRaw = isNonEmptyString(primary.data.backlink) ? primary.data.backlink.trim() : null
+            const normalizedBacklinkUrl = normalizedBacklinkRaw
+              ? (() => {
+                  try {
+                    return new URL(normalizedBacklinkRaw).toString().replace(/\/$/, '')
+                  } catch {
+                    return null
+                  }
+                })()
+              : null
+            if (primary.kind === 'friend' && selfSite) {
+              if (normalizedSiteUrl === selfSite) {
+                await createComment(`检测到友链 JSON 的 url 指向本站（${siteBase}），请填写你自己的网站 URL。`)
+                return
+              }
+              if (normalizedBacklinkUrl === selfSite) {
+                await createComment(`检测到友链 JSON 的 backlink 指向本站（${siteBase}），请填写你自己网站的友链页 URL。`)
+                return
+              }
+            }
 
             const avatarCheck = avatarUrl ? await checkUrl(avatarUrl, { timeoutMs: 10000 }) : { ok: false, error: 'Invalid avatar URL' }
             const siteCheck =
@@ -721,6 +743,12 @@ jobs:
             const siteBase = await getSiteBase(pr.data.base.repo.default_branch)
             const avatarUrl = normalizeUrl(primary.data.avatar, siteBase)
             const siteUrl = normalizeUrl(primary.data.url, siteBase)
+            const selfSite = siteBase ? siteBase.replace(/\/$/, '') : null
+            const normalizedSiteUrl = siteUrl ? siteUrl.replace(/\/$/, '') : null
+            if (primary.kind === 'friend' && selfSite && normalizedSiteUrl === selfSite) {
+              await createComment(`检测到友链 JSON 的 url 指向本站（${siteBase}），请填写你自己的网站 URL。`)
+              return
+            }
 
             const avatarCheck = avatarUrl ? await checkUrl(avatarUrl, { timeoutMs: 10000 }) : { ok: false, error: 'Invalid avatar URL' }
             const siteCheck =

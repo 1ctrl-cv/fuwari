@@ -108,9 +108,12 @@ jobs:
             }
 
             async function createComment(body) {
-              core.info(`createComment len=${String(body || '').length}`)
+              const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              const footer = `\n\n---\n该评论由 Action 自动化发送，无需回复。\n\n🔗 [查看 Action](${runUrl})`
+              const fullBody = body + footer
+              core.info(`createComment len=${String(fullBody || '').length}`)
               try {
-                await github.rest.issues.createComment({ owner, repo, issue_number: pull_number, body })
+                await github.rest.issues.createComment({ owner, repo, issue_number: pull_number, body: fullBody })
                 core.info('createComment ok')
               } catch (e) {
                 core.error(`createComment failed: status=${e?.status || ''}`)
@@ -595,7 +598,10 @@ jobs:
             }
 
             async function createComment(body) {
-              await github.rest.issues.createComment({ owner, repo, issue_number: pull_number, body })
+              const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+              const footer = `\n\n---\n该评论由 Action 自动化发送，无需回复。\n\n🔗 [查看 Action](${runUrl})`
+              const fullBody = body + footer
+              await github.rest.issues.createComment({ owner, repo, issue_number: pull_number, body: fullBody })
             }
 
             function parseJsonSafe(text) {

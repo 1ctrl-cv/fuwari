@@ -1,0 +1,324 @@
+---
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { Icon } from "astro-icon/components";
+
+const breadcrumbSchema = {
+	"@context": "https://schema.org",
+	"@type": "BreadcrumbList",
+	itemListElement: [
+		{
+			"@type": "ListItem",
+			position: 1,
+			name: "首页",
+			item: Astro.site,
+		},
+		{
+			"@type": "ListItem",
+			position: 2,
+			name: "文章变更",
+			item: new URL("/changes", Astro.site).toString(),
+		},
+	],
+};
+---
+
+<MainGridLayout title="文章变更">
+    <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)}></script>
+    
+    <div class="card-base p-6 md:p-8">
+        <div class="flex items-center gap-2 mb-6">
+            <div class="h-8 w-8 rounded-lg bg-[var(--primary)] flex items-center justify-center text-white dark:text-black/70">
+                <Icon name="material-symbols:history-edu-rounded" class="text-[1.5rem]"></Icon>
+            </div>
+            <h1 class="text-2xl font-bold text-black dark:text-white">文章变更</h1>
+        </div>
+        
+        <div id="changes-info" class="text-sm text-black/50 dark:text-white/50 mb-4"></div>
+        
+        <div id="changes-list" class="space-y-6">
+            <div class="text-center text-black/40 dark:text-white/40 py-8">
+                <Icon name="material-symbols:hourglass-top" class="text-4xl mb-2 block mx-auto"></Icon>
+                <p>加载中...</p>
+            </div>
+        </div>
+    </div>
+</MainGridLayout>
+
+<script>
+import * as Diff from 'diff';
+
+const DB_NAME = 'fuwari-rss-store';
+const DB_VERSION = 3;
+const STORE_NAME = 'posts';
+const BASE_PATH = (import.meta.env.BASE_URL ?? '/');
+const SCOPE_ID = BASE_PATH.replace(/^\/+|\/+$/g, '') || 'root';
+const INIT_TIME_KEY = 'fuwari-notification-init-time';
+const NOTIFICATION_STATE_KEY = 'fuwari-notification-state';
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (db.objectStoreNames.contains(STORE_NAME)) {
+                const existingStore = event.target.transaction.objectStore(STORE_NAME);
+                if (existingStore.keyPath !== 'id') {
+                    db.deleteObjectStore(STORE_NAME);
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                }
+                return;
+            }
+            db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        };
+    });
+}
+
+function normalizeGuid(guid, link) {
+    const value = (guid || link || '').trim();
+    if (!value) return '';
+    try {
+        const url = new URL(value, window.location.origin);
+        return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+        return value;
+    }
+}
+
+function generateId(guid) {
+    return `${SCOPE_ID}:${guid}`;
+}
+
+function getStoredPosts(db) {
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function fetchRSS() {
+    try {
+        const response = await fetch('/rss.xml', { cache: 'no-store' });
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(text, 'text/xml');
+        const items = Array.from(xml.querySelectorAll('item'));
+        
+        return items.map(item => {
+            const title = item.querySelector('title')?.textContent || '';
+            const link = (item.querySelector('link')?.textContent || '').trim();
+            const rawGuid = (item.querySelector('guid')?.textContent || '').trim();
+            const guid = normalizeGuid(rawGuid || link, link);
+            const pubDate = new Date(item.querySelector('pubDate')?.textContent || '').getTime();
+            const description = item.querySelector('description')?.textContent || '';
+            
+            const contentEncoded = item.getElementsByTagNameNS('http://purl.org/rss/1.0/modules/content/', 'encoded')[0]?.textContent;
+            const content = contentEncoded || 
+                            item.getElementsByTagName('content:encoded')[0]?.textContent || 
+                            item.querySelector('content')?.textContent || '';
+
+            return { title, link, guid, pubDate, description, content };
+        });
+    } catch (e) {
+        console.error('Failed to fetch RSS:', e);
+        return [];
+    }
+}
+
+function computeDiff(oldText, newText) {
+    if (!oldText || !newText) return null;
+    
+    const stripHtml = (html) => {
+        const tmp = document.createElement("DIV");
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || "";
+    };
+
+    const cleanOld = stripHtml(oldText);
+    const cleanNew = stripHtml(newText);
+
+    const diffs = Diff.diffLines(cleanOld, cleanNew);
+    const hasChanges = diffs.some(part => part.added || part.removed);
+    
+    if (!hasChanges) return null;
+
+    return diffs;
+}
+
+function escapeHtml(text) {
+    if (!text) return text;
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function getRelativePath(absoluteUrl) {
+    try {
+        const url = new URL(absoluteUrl);
+        return url.pathname;
+    } catch {
+        return absoluteUrl;
+    }
+}
+
+async function init() {
+    const listEl = document.getElementById('changes-list');
+    const infoEl = document.getElementById('changes-info');
+    
+    if (!listEl) return;
+    
+    try {
+        const initTimestamp = localStorage.getItem(INIT_TIME_KEY);
+        const initTimeStr = initTimestamp ? new Date(parseInt(initTimestamp)).toLocaleString() : '未知';
+        const checkTimeStr = new Date().toLocaleString();
+        
+        const persistedStateStr = localStorage.getItem(NOTIFICATION_STATE_KEY);
+        let changes = [];
+        let stateTimeStr = checkTimeStr;
+        
+        if (persistedStateStr) {
+            try {
+                const state = JSON.parse(persistedStateStr);
+                changes = state.items || [];
+                stateTimeStr = new Date(state.timestamp).toLocaleString();
+            } catch (e) {
+                console.error('Failed to parse persisted state:', e);
+            }
+        }
+        
+        if (infoEl) {
+            infoEl.innerHTML = `
+                <div class="flex flex-wrap gap-4 text-xs">
+                    <span class="bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
+                        <span class="opacity-60">开始追踪:</span> ${initTimeStr}
+                    </span>
+                    <span class="bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
+                        <span class="opacity-60">最后变更:</span> ${stateTimeStr}
+                    </span>
+                    <span class="bg-black/5 dark:bg-white/5 px-2 py-1 rounded">
+                        <span class="opacity-60">变更数量:</span> ${changes.length} 条
+                    </span>
+                </div>
+            `;
+        }
+        
+        if (changes.length === 0) {
+            listEl.innerHTML = `
+                <div class="text-center text-black/40 dark:text-white/40 py-8">
+                    <Icon name="material-symbols:check-circle" class="text-4xl mb-2 block mx-auto text-green-500"></Icon>
+                    <p>没有发现文章变更</p>
+                    <p class="text-xs mt-2 opacity-60">系统会在后续访问中追踪文章变更</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        changes.forEach((post, index) => {
+            const safeId = `diff-${index}-${post.guid.replace(/[^a-zA-Z0-9-_]/g, '_')}`;
+            const postLink = getRelativePath(post.link);
+            
+            html += `
+                <div class="border border-black/10 dark:border-white/10 rounded-xl overflow-hidden">
+                    <div class="bg-black/[0.02] dark:bg-white/[0.02] p-4">
+                        <div class="flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 px-2 py-1 rounded shrink-0">更新</span>
+                                <a href="${postLink}" class="font-bold text-black dark:text-white hover:text-[var(--primary)] transition-colors truncate">
+                                    ${post.title}
+                                </a>
+                            </div>
+                            ${post.diff ? `
+                            <button data-diff-toggle="${safeId}" class="text-xs text-[var(--primary)] hover:underline shrink-0 flex items-center gap-1">
+                                <Icon name="material-symbols:unfold-more" class="text-base"></Icon>
+                                <span class="toggle-text">展开变更</span>
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ${post.diff ? `
+                    <div id="${safeId}" class="hidden border-t border-black/5 dark:border-white/5">
+                        <div class="p-4 bg-gray-50 dark:bg-gray-900 max-h-[60vh] overflow-y-auto">
+                            <div class="flex gap-2 mb-3 text-xs">
+                                <span class="flex items-center gap-1">
+                                    <span class="w-3 h-3 bg-red-200 dark:bg-red-900/50 rounded"></span>
+                                    <span class="text-black/50 dark:text-white/50">删除的内容</span>
+                                </span>
+                                <span class="flex items-center gap-1">
+                                    <span class="w-3 h-3 bg-green-200 dark:bg-green-900/50 rounded"></span>
+                                    <span class="text-black/50 dark:text-white/50">新增的内容</span>
+                                </span>
+                            </div>
+                            <div class="font-mono text-sm space-y-1">
+                                ${post.diff.map(part => {
+                                    const colorClass = part.added 
+                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
+                                        : part.removed 
+                                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' 
+                                        : 'text-gray-500 dark:text-gray-400';
+                                    const prefix = part.added ? '+' : part.removed ? '-' : ' ';
+                                    return `<div class="${colorClass} p-2 rounded break-all whitespace-pre-wrap"><span class="opacity-50">${prefix}</span> ${escapeHtml(part.value)}</div>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        listEl.innerHTML = html;
+        
+        listEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-diff-toggle]');
+            if (btn) {
+                const targetId = btn.getAttribute('data-diff-toggle');
+                const target = document.getElementById(targetId);
+                const toggleText = btn.querySelector('.toggle-text');
+                if (target) {
+                    target.classList.toggle('hidden');
+                    if (toggleText) {
+                        toggleText.textContent = target.classList.contains('hidden') ? '展开变更' : '收起变更';
+                    }
+                }
+            }
+        });
+        
+    } catch (e) {
+        console.error('Failed to load changes:', e);
+        listEl.innerHTML = `
+            <div class="text-center text-red-500 py-8">
+                <Icon name="material-symbols:error" class="text-4xl mb-2 block mx-auto"></Icon>
+                <p>加载失败</p>
+                <p class="text-xs mt-2 opacity-60">${e}</p>
+            </div>
+        `;
+    }
+}
+
+init();
+</script>
+
+<style>
+    #changes-list .card-base {
+        animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>

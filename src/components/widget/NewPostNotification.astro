@@ -342,90 +342,86 @@ import { Icon } from "astro-icon/components";
 
         setupEventListeners();
 
-        function setupEventListeners() {
-            const updatePanelTargetSize = () => {
-                const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
-                const maxPanelWidthPx = Math.min(20 * rootFontSize, window.innerWidth - 32)
-                const minPanelWidthPx = Math.min(16 * rootFontSize, window.innerWidth - 32)
+        function updatePanelTargetSize() {
+            const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+            const maxPanelWidthPx = Math.min(20 * rootFontSize, window.innerWidth - 32)
+            const minPanelWidthPx = Math.min(16 * rootFontSize, window.innerWidth - 32)
 
-                let longestTitle = 0
-                for (const post of newPosts) {
-                    if (!post?.title) continue
-                    longestTitle = Math.max(longestTitle, String(post.title).length)
-                }
-
-                const estimatedWidthRem = 14 + Math.min(longestTitle, 30) * 0.2
-                const estimatedWidthPx = estimatedWidthRem * rootFontSize
-                const openWidthPx = Math.max(minPanelWidthPx, Math.min(maxPanelWidthPx, estimatedWidthPx))
-                panel.style.setProperty('--np-open-width', `${Math.round(openWidthPx)}px`)
-
-                const sizer = document.createElement('div')
-                sizer.style.position = 'fixed'
-                sizer.style.left = '-10000px'
-                sizer.style.top = '0'
-                sizer.style.width = `${Math.round(openWidthPx)}px`
-                sizer.style.maxHeight = 'none'
-                sizer.style.overflow = 'visible'
-                sizer.style.pointerEvents = 'none'
-                sizer.style.visibility = 'hidden'
-
-                const content = document.getElementById('notification-content')
-                if (!content) return
-                const clone = content.cloneNode(true)
-                if (clone instanceof HTMLElement) {
-                    clone.style.position = 'static'
-                    clone.style.inset = 'auto'
-                    clone.style.opacity = '1'
-                    clone.style.pointerEvents = 'auto'
-                    clone.style.transform = 'none'
-                    clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'))
-                    const listEl = clone.querySelector('#new-post-list')
-                    if (listEl instanceof HTMLElement) {
-                        listEl.style.maxHeight = 'none'
-                        listEl.style.overflow = 'visible'
-                    }
-                }
-
-                sizer.appendChild(clone)
-                document.body.appendChild(sizer)
-                const measuredHeightPx = (clone instanceof HTMLElement ? clone.scrollHeight : sizer.scrollHeight) + 4
-                sizer.remove()
-
-                const maxPanelHeightPx = Math.min(window.innerHeight * 0.7, 34 * rootFontSize)
-                const minPanelHeightPx = 10 * rootFontSize
-                const openHeightPx = Math.max(minPanelHeightPx, Math.min(maxPanelHeightPx, measuredHeightPx))
-                panel.style.setProperty('--np-open-height', `${Math.round(openHeightPx)}px`)
+            let longestTitle = 0
+            for (const post of newPosts) {
+                if (!post?.title) continue
+                longestTitle = Math.max(longestTitle, String(post.title).length)
             }
 
-            // State management functions
-            const openPanel = () => {
-                updatePanelTargetSize()
-                panel.classList.add('is-open');
-                const prevTimer = panel.getAttribute('data-open-timer');
-                if (prevTimer) {
-                    clearTimeout(Number(prevTimer));
+            const estimatedWidthRem = 14 + Math.min(longestTitle, 30) * 0.2
+            const estimatedWidthPx = estimatedWidthRem * rootFontSize
+            const openWidthPx = Math.max(minPanelWidthPx, Math.min(maxPanelWidthPx, estimatedWidthPx))
+            panel.style.setProperty('--np-open-width', `${Math.round(openWidthPx)}px`)
+
+            const sizer = document.createElement('div')
+            sizer.style.position = 'fixed'
+            sizer.style.left = '-10000px'
+            sizer.style.top = '0'
+            sizer.style.width = `${Math.round(openWidthPx)}px`
+            sizer.style.maxHeight = 'none'
+            sizer.style.overflow = 'visible'
+            sizer.style.pointerEvents = 'none'
+            sizer.style.visibility = 'hidden'
+
+            const content = document.getElementById('notification-content')
+            if (!content) return
+            const clone = content.cloneNode(true)
+            if (clone instanceof HTMLElement) {
+                clone.style.position = 'static'
+                clone.style.inset = 'auto'
+                clone.style.opacity = '1'
+                clone.style.pointerEvents = 'auto'
+                clone.style.transform = 'none'
+                clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'))
+                const listEl = clone.querySelector('#new-post-list')
+                if (listEl instanceof HTMLElement) {
+                    listEl.style.maxHeight = 'none'
+                    listEl.style.overflow = 'visible'
                 }
-                const timer = window.setTimeout(() => {
-                    panel.classList.add('is-open-content');
-                    panel.removeAttribute('data-open-timer');
-                }, 360);
-                panel.setAttribute('data-open-timer', String(timer));
-                dot?.classList.add('hidden'); // Hide dot when opened
-            };
-    
-            const closePanel = () => {
-                const prevTimer = panel.getAttribute('data-open-timer');
-                if (prevTimer) {
-                    clearTimeout(Number(prevTimer));
-                    panel.removeAttribute('data-open-timer');
-                }
-                panel.classList.remove('is-open-content');
-                panel.classList.remove('is-open');
-            };
-    
-            // Event Listeners
-            // Remove old listeners to prevent duplicates if called multiple times? 
-            // Actually, in this script structure, showNotification is called once per page load.
+            }
+
+            sizer.appendChild(clone)
+            document.body.appendChild(sizer)
+            const measuredHeightPx = (clone instanceof HTMLElement ? clone.scrollHeight : sizer.scrollHeight) + 4
+            sizer.remove()
+
+            const maxPanelHeightPx = Math.min(window.innerHeight * 0.7, 34 * rootFontSize)
+            const minPanelHeightPx = 10 * rootFontSize
+            const openHeightPx = Math.max(minPanelHeightPx, Math.min(maxPanelHeightPx, measuredHeightPx))
+            panel.style.setProperty('--np-open-height', `${Math.round(openHeightPx)}px`)
+        }
+
+        const openPanel = () => {
+            updatePanelTargetSize()
+            panel.classList.add('is-open');
+            const prevTimer = panel.getAttribute('data-open-timer');
+            if (prevTimer) {
+                clearTimeout(Number(prevTimer));
+            }
+            const timer = window.setTimeout(() => {
+                panel.classList.add('is-open-content');
+                panel.removeAttribute('data-open-timer');
+            }, 360);
+            panel.setAttribute('data-open-timer', String(timer));
+            dot?.classList.add('hidden');
+        };
+
+        const closePanel = () => {
+            const prevTimer = panel.getAttribute('data-open-timer');
+            if (prevTimer) {
+                clearTimeout(Number(prevTimer));
+                panel.removeAttribute('data-open-timer');
+            }
+            panel.classList.remove('is-open-content');
+            panel.classList.remove('is-open');
+        };
+
+        function setupEventListeners() {
             minimizedBtn.onclick = () => {
                 if (!panel.classList.contains('is-open')) {
                     openPanel();
@@ -442,20 +438,15 @@ import { Icon } from "astro-icon/components";
             if (clearBtn) {
                 clearBtn.onclick = (e) => {
                     e.stopPropagation();
-                    // Clear state from localStorage
                     localStorage.removeItem(NOTIFICATION_STATE_KEY);
                     
-                    // Update init time to current time since we are "resetting" the baseline
                     const now = Date.now();
                     localStorage.setItem(INIT_TIME_KEY, now.toString());
                     
-                    // Refresh view with new init time
                     showNotification([], now, false, now);
                 };
             }
     
-            // Add event delegation for toggles
-            // Ensure we don't add duplicate listeners to list
             if (!list.hasAttribute('data-listening')) {
                 list.addEventListener('click', (e) => {
                     const btn = e.target.closest('[data-diff-toggle]');

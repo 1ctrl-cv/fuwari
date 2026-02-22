@@ -629,16 +629,16 @@ import { Icon } from "astro-icon/components";
                         }
                         
                         if (descriptionChanged) {
-                             const d = Diff.diffChars(stored.description, post.description);
-                             if (d) {
+                             const d = Diff.diffLines(stored.description, post.description);
+                             if (d && d.some(p => p.added || p.removed)) {
                                  result.description = d;
                                  hasChanges = true;
                              }
                         }
                         
                         if (titleChanged) {
-                             const d = Diff.diffChars(stored.title, post.title);
-                             if (d) {
+                             const d = Diff.diffLines(stored.title, post.title);
+                             if (d && d.some(p => p.added || p.removed)) {
                                  result.title = d;
                                  hasChanges = true;
                              }

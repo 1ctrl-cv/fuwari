@@ -203,13 +203,19 @@
 		}
 
 		if (oldDesc !== newDesc) {
-			result.description = Diff.diffChars(oldDesc, newDesc);
-			hasChanges = true;
+			const d = Diff.diffLines(oldDesc, newDesc);
+			if (d && d.some(p => p.added || p.removed)) {
+				result.description = d;
+				hasChanges = true;
+			}
 		}
 
 		if (oldTitle !== newTitle) {
-			result.title = Diff.diffChars(oldTitle, newTitle);
-			hasChanges = true;
+			const d = Diff.diffLines(oldTitle, newTitle);
+			if (d && d.some(p => p.added || p.removed)) {
+				result.title = d;
+				hasChanges = true;
+			}
 		}
 
 		if (!hasChanges) return null;

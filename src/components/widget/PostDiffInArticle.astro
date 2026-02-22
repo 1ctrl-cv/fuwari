@@ -336,99 +336,11 @@
 	}
 
 	function applyInlineTextDiff(targetTextNodes, oldText, newText, anchorState) {
-		const nodes = Array.isArray(targetTextNodes) ? targetTextNodes : [targetTextNodes];
-		const head = nodes[0];
-		if (!(head instanceof Text)) return false;
-		for (let i = 1; i < nodes.length; i += 1) {
-			const n = nodes[i];
-			if (n instanceof Node) n.parentNode?.removeChild(n);
-		}
-		const parts = Diff.diffChars(String(oldText || ""), String(newText || ""));
-		const frag = document.createDocumentFragment();
-		for (const part of parts) {
-			if (part.added || part.removed) {
-				if (!anchorState.inserted) {
-					const anchor = document.createElement("span");
-					anchor.id = "post-diff";
-					anchor.setAttribute("data-post-inline-diff-inline", "anchor");
-					frag.appendChild(anchor);
-					anchorState.inserted = true;
-				}
-				const span = document.createElement("span");
-				span.className = part.added ? "post-inline-diff-add-target" : "post-inline-diff-del-target";
-				span.setAttribute("data-post-inline-diff-inline", part.added ? "add" : "del");
-				span.textContent = String(part.value ?? "");
-				frag.appendChild(span);
-				continue;
-			}
-			frag.appendChild(document.createTextNode(String(part.value ?? "")));
-		}
-		head.parentNode?.replaceChild(frag, head);
-		return parts.some((p) => p.added || p.removed);
+		return false;
 	}
 
 	function tryApplyInlineReplace(targetEl, oldHtml, newHtml, anchorState) {
-		const oldEl = parseHtmlSingleElement(oldHtml);
-		const newEl = parseHtmlSingleElement(newHtml);
-		if (!(oldEl instanceof HTMLElement) || !(newEl instanceof HTMLElement)) return false;
-		if (oldEl.tagName !== newEl.tagName) return false;
-		if (targetEl.tagName !== oldEl.tagName) return false;
-		if (normalizeLineText(oldEl.textContent || "") !== normalizeLineText(targetEl.textContent || "")) return false;
-
-		const tokenize = (el) => {
-			const out = [];
-			let buf = "";
-			/** @type {Text[]} */
-			let bufNodes = [];
-			for (const n of Array.from(el.childNodes)) {
-				if (n.nodeType === Node.TEXT_NODE) {
-					buf += n.nodeValue || "";
-					bufNodes.push(n);
-					continue;
-				}
-				if (bufNodes.length) {
-					out.push({ kind: "text", text: buf, nodes: bufNodes });
-					buf = "";
-					bufNodes = [];
-				}
-				if (n.nodeType === Node.ELEMENT_NODE) out.push({ kind: "el", node: n });
-				else return null;
-			}
-			if (bufNodes.length) out.push({ kind: "text", text: buf, nodes: bufNodes });
-			return out;
-		};
-
-		const stack = [{ a: oldEl, b: newEl, t: targetEl }];
-		let changed = false;
-
-		while (stack.length) {
-			const { a, b, t } = stack.pop();
-			const aTok = tokenize(a);
-			const bTok = tokenize(b);
-			const tTok = tokenize(t);
-			if (!aTok || !bTok || !tTok) return false;
-			if (aTok.length !== bTok.length || aTok.length !== tTok.length) return false;
-
-			for (let i = aTok.length - 1; i >= 0; i -= 1) {
-				const at = aTok[i];
-				const bt = bTok[i];
-				const tt = tTok[i];
-				if (at.kind !== bt.kind || at.kind !== tt.kind) return false;
-				if (at.kind === "text") {
-					const did = applyInlineTextDiff(tt.nodes, at.text, bt.text, anchorState);
-					if (did) changed = true;
-					continue;
-				}
-				if (at.kind === "el") {
-					if (at.node.tagName !== bt.node.tagName || at.node.tagName !== tt.node.tagName) return false;
-					stack.push({ a: at.node, b: bt.node, t: tt.node });
-					continue;
-				}
-				return false;
-			}
-		}
-
-		return changed;
+		return false;
 	}
 
 	function applyInlineDiff(container, diffParts, isDebug) {
